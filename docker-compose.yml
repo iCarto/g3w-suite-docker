@@ -2,7 +2,7 @@ services:
   postgis:
     image: kartoza/postgis:16-3.4
     ports:
-      - "5439:5432"
+      - "6102:5432"
     environment:
       - POSTGRES_DBNAME=${G3WSUITE_POSTGRES_DBNAME},data_testing,data_production
       - POSTGRES_USER=${G3WSUITE_POSTGRES_USER_LOCAL}
@@ -27,7 +27,7 @@ services:
       internal:
 
   g3w-suite:
-    image: g3wsuite/g3w-suite:dev
+    image: g3wsuite/g3w-suite:v3.9.x
     environment:
       - DISPLAY=:99
       - G3WSUITE_ADMIN_USERNAME
@@ -52,6 +52,16 @@ services:
       - QGIS_SERVER_LOG_FILE
       - QGIS_SERVER_LOG_LEVEL
       - WEBGIS_PUBLIC_HOSTNAME
+      - QGIS_SERVER_CACHE_SIZE
+      - G3WSUITE_DEBUG
+      - QGIS_SERVER_MAX_THREADS
+      - QGIS_SERVER_PARALLEL_RENDERING
+      - QGIS_SERVER_SHOW_GROUP_SEPARATOR
+      - QGIS_SERVER_TRUST_LAYER_METADATA
+      - QGIS_SERVER_WMS_MAX_HEIGHT
+      - QGIS_SERVER_WMS_MAX_WIDTH  
+      - QGIS_SERVER_PROJECT_CACHE_STRATEGY  
+      - TILESTACHE_CACHE_TYPE
     expose:
       - "8000"
     restart: always
@@ -98,18 +108,22 @@ services:
 
   nginx:
     image: nginx
+    environment:
+      - WEBGIS_SSL
+      - WEBGIS_PUBLIC_HOSTNAME
+      - WEBGIS_ADMIN_EMAIL  
     ports:
-      - "8080:8080"
-      - "443:443"
+      - "6100:8080"
+      - "6101:443"
     expose:
       - "8080"
     volumes:
       - ${WEBGIS_DOCKER_SHARED_VOLUME}:/shared-volume
-      - ${WEBGIS_DOCKER_SHARED_VOLUME}/var/www/.well-known:/var/www/.well-known
-      - ${WEBGIS_DOCKER_SHARED_VOLUME}/certs/letsencrypt:/etc/letsencrypt:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
       - ./config/g3w-suite/overrides/static:/shared-volume/static/overrides:ro
-      - ./config/nginx:/etc/nginx/conf.d/:ro
+      # - ./config/nginx:/etc/nginx/conf.d/
       - ./config/nginx/html:/var/www/html:ro
+      - ./config/nginx/templates:/etc/nginx/templates:ro
     logging:
       driver: "json-file"
       options:
@@ -119,12 +133,6 @@ services:
     networks:
       internal:
 
-  # Letsencrypt certs
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ${WEBGIS_DOCKER_SHARED_VOLUME}/var/www/certbot:/var/www/certbot
-      - ${WEBGIS_DOCKER_SHARED_VOLUME}/certs/letsencrypt:/etc/letsencrypt
 
 volumes:
   shared-volume:
