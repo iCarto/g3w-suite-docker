@@ -22,9 +22,4 @@ location /media_user/ {
   root /shared-volume/project_data/;
 }
 
-# Certbot configuration
-location /.well-known/acme-challenge/ {
-  root /var/www;
-}
-
-server_name $WEBGIS_PUBLIC_HOSTNAME;
+server_name ${WEBGIS_PUBLIC_HOSTNAME};

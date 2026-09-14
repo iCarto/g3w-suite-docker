@@ -1,0 +1,12 @@
+
+client_max_body_size 200M;
+client_body_timeout  600;
+
+upstream g3w_suite {
+  ip_hash;
+  server g3w-suite:8000;
+}
+
+# Use the mapped file
+include /etc/nginx/conf.d/django${WEBGIS_SSL};
+
