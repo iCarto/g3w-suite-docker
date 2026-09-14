@@ -201,5 +201,6 @@ if os.getenv('WEBGIS_PUBLIC_HOSTNAME', None):
         "http://127.0.0.1",
         "http://127.0.0.1:8080",
         f"http://{os.getenv('WEBGIS_PUBLIC_HOSTNAME', None)}",
-        f"http://{os.getenv('WEBGIS_PUBLIC_HOSTNAME', None)}:8080"
+        f"http://{os.getenv('WEBGIS_PUBLIC_HOSTNAME', None)}:8080",
+        f"https://{os.getenv('WEBGIS_PUBLIC_HOSTNAME', None)}:6101",
     ]

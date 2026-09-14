@@ -2,7 +2,7 @@ services:
   postgis:
     image: kartoza/postgis:16-3.4
     ports:
-      - "5439:5432"
+      - "6102:5432"
     environment:
       - POSTGRES_DBNAME=${G3WSUITE_POSTGRES_DBNAME},data_testing,data_production
       - POSTGRES_USER=${G3WSUITE_POSTGRES_USER_LOCAL}
@@ -31,7 +31,7 @@ services:
     environment:
       - DISPLAY=:99
       - G3WSUITE_ADMIN_USERNAME
-      - G3WSUITE_ADMIN_PASS
+      - G3WSUITE_ADMIN_PASSWORD
       - G3WSUITE_TILECACHE_PATH
       - G3WSUITE_POSTGRES_DBNAME
       - G3WSUITE_POSTGRES_USER
@@ -39,8 +39,7 @@ services:
       - G3WSUITE_POSTGRES_PASS
       - G3WSUITE_POSTGRES_HOST
       - G3WSUITE_POSTGRES_PORT
-      - G3WSUITE_ORS_API_ENDPOINT
-      - G3WSUITE_ORS_API_KEY
+      - G3WSUITE_ELASTIC_HOST
       - TILESTACHE_CACHE_BUFFER_SIZE
       - TILESTACHE_CACHE_TOKEN
       - G3WSUITE_GUNICORN_NUM_WORKERS
@@ -52,6 +51,16 @@ services:
       - QGIS_SERVER_LOG_FILE
       - QGIS_SERVER_LOG_LEVEL
       - WEBGIS_PUBLIC_HOSTNAME
+      - QGIS_SERVER_CACHE_SIZE
+      - G3WSUITE_DEBUG
+      - QGIS_SERVER_MAX_THREADS
+      - QGIS_SERVER_PARALLEL_RENDERING
+      - QGIS_SERVER_SHOW_GROUP_SEPARATOR
+      - QGIS_SERVER_TRUST_LAYER_METADATA
+      - QGIS_SERVER_WMS_MAX_HEIGHT
+      - QGIS_SERVER_WMS_MAX_WIDTH
+      - QGIS_SERVER_PROJECT_CACHE_STRATEGY
+      - TILESTACHE_CACHE_TYPE
     expose:
       - "8000"
     restart: always
@@ -83,33 +92,37 @@ services:
       internal:
     restart: always
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.1
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    volumes:
-      - ${WEBGIS_DOCKER_SHARED_VOLUME}/esdata:/usr/share/elasticsearch/data
-      #- esdata:/usr/share/elasticsearch/data
+      # elasticsearch:
+      #   image: docker.elastic.co/elasticsearch/elasticsearch:8.18.1
+      #   environment:
+      #     - discovery.type=single-node
+      #     - xpack.security.enabled=false
+      #     - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      #   ports:
+      #     - "9200:9200"
+      #     - "9300:9300"
+      #   volumes:
+      #     - ${WEBGIS_DOCKER_SHARED_VOLUME}/esdata:/usr/share/elasticsearch/data
+      #     #- esdata:/usr/share/elasticsearch/data
 
   nginx:
     image: nginx
+    environment:
+      - WEBGIS_SSL
+      - WEBGIS_PUBLIC_HOSTNAME
+      - WEBGIS_ADMIN_EMAIL
     ports:
-      - "8080:8080"
-      - "443:443"
+      - "6100:8080"
+      - "6101:443"
     expose:
       - "8080"
     volumes:
       - ${WEBGIS_DOCKER_SHARED_VOLUME}:/shared-volume
-      - ${WEBGIS_DOCKER_SHARED_VOLUME}/var/www/.well-known:/var/www/.well-known
-      - ${WEBGIS_DOCKER_SHARED_VOLUME}/certs/letsencrypt:/etc/letsencrypt:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
       - ./config/g3w-suite/overrides/static:/shared-volume/static/overrides:ro
-      - ./config/nginx:/etc/nginx/conf.d/:ro
+      # - ./config/nginx:/etc/nginx/conf.d/
       - ./config/nginx/html:/var/www/html:ro
+      - ./config/nginx/templates:/etc/nginx/templates:ro
     logging:
       driver: "json-file"
       options:
@@ -118,13 +131,8 @@ services:
     restart: always
     networks:
       internal:
-
-  # Letsencrypt certs
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ${WEBGIS_DOCKER_SHARED_VOLUME}/var/www/certbot:/var/www/certbot
-      - ${WEBGIS_DOCKER_SHARED_VOLUME}/certs/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - g3w-suite
 
 volumes:
   shared-volume:
